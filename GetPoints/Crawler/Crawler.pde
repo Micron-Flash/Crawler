@@ -7,13 +7,19 @@ RPoint[][] points;
 PrintWriter filePos;
 
 GButton importButton, exportButton, moveButton;
-GTextField scaleInput;
+GTextField scaleInput , anchorPoints, chainLength;
+GLabel scaleLabel , anchorUnits, chainLabel;
 
 String file = "default.svg";
 String scaleString;
 int offsetX;
 int offsetY;
+
 float scale = 100;
+float scale2 = 1;
+float anchor;
+float chain;
+
 Boolean moving = false;
 Boolean render = false;
 Boolean imp = false;
@@ -30,7 +36,7 @@ void setup() {
   RG.init(this);
   
   RG.setPolygonizer(RG.UNIFORMLENGTH);
-  RG.setPolygonizerLength(map(1,1,height, 3, 200));
+  RG.setPolygonizerLength(1*scale2);
  
   importButton = new GButton(this , 5 , 15 , 170 , 20,"Import SVG");
   
@@ -38,20 +44,35 @@ void setup() {
   
   exportButton = new GButton(this , 5 , 65 , 170 , 20,"Render Points");
   
-  scaleInput = new GTextField(this, 5 , 90 , 170, 20);
+  scaleInput = new GTextField(this, 5 , 90 , 25, 20);
   scaleInput.setPromptText("Scale");
   scaleInput.setText("100");
+  
+  scaleLabel = new GLabel(this, 27 , 90 , 120, 20, "%  SVG scale");
+  
+  anchorPoints = new GTextField(this, 5 , 115 , 140 , 20);
+  anchorPoints.setPromptText("Length Between Anchors");
+  
+  anchorUnits = new GLabel(this, 145, 115, 25, 20 , "mm");
+  
+  chainLength = new GTextField(this, 5 , 140 , 140, 20);
+  chainLength.setPromptText("Chain Length");
+  
+  chainLabel = new GLabel(this, 145 , 140, 150,20, "mm");
 }
 
 void draw(){
    translate(0,0);
-   background(250);
+   background(240);
    stroke(0);
    fill(200);
    rect(0,0,180,height);
-  //scaleString = scaleInput.getText();
-   
-   //importButton.setLocalColor(4,#CECECE);
+   fill(255);
+   rect(200, 15, anchor* scale2, chain * scale2);
+   if ((chain * scale2 >= height - 15) || (anchor * scale2 >= width - 200)){
+     scale2 = scale2 - .01;
+   }
+ 
     if (moving){
          offsetX = mouseX;
          offsetY = mouseY;
@@ -60,13 +81,13 @@ void draw(){
          }
      }
    grp = RG.loadShape(file);
-   grp.scale(scale/100);
+   grp.scale((scale/100) * scale2);
    grp.translate(offsetX,offsetY);
    grp.draw();
-   points = grp.getPointsInPaths();
    
-   if(points != null){
      if (render && fileSelected){
+       //grp.scale(scale/100);
+       points = grp.getPointsInPaths();
        for(int i=0; i<points.length; i++){
          for(int j = 0; j<points[i].length; j++){
             fill(50);
@@ -84,7 +105,7 @@ void draw(){
     }
     
   }
-}
+
 
 
 void handleButtonEvents(GButton button, GEvent event) {
@@ -119,5 +140,15 @@ void fileSelected(File selection) {
 
 
 public void handleTextEvents(GEditableTextControl textControl, GEvent event) { 
+   if(textControl == scaleInput){
    scale = Float.parseFloat(textControl.getText());
+   }
+   else if (textControl == anchorPoints){
+    anchor = Float.parseFloat(textControl.getText());
+    scale2 = 1;
+   }
+   else if (textControl == chainLength){
+     chain = Float.parseFloat(textControl.getText());
+     scale2 =1;
+   }
 }
