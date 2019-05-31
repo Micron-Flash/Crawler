@@ -17,7 +17,8 @@
   #define MOTOR_DECEL 100
   #define DIR_1 4 // Pins for motor 1
   #define STEP_1 5 //
-  
+  #define HOMING1 7 // Left endstop
+  #define HOMING2 8 // Right endstop
   #define DIR_2 2 // Pins for motor 2
   #define STEP_2 3
   
@@ -65,17 +66,22 @@
   float newBC;
   float targetCx;
   float targetCy;
-  double cX = AB/2;
-  double cY = 558.8; // manually measured for now
+  double cX;
+  double cY; // manually measured for now
   int aX = 0;
   int aY = 0;
+  int ACMax = 1400;
+  int BCMax = 1400;
   double bX = AB + aX;
   int bY = 0;
   float changeAC; // The amount the motor needs to move inorder to get to the target points
   float changeBC;
   int moveACsteps;
   int moveBCsteps;
-
+  bool homed = true;
+  bool homedFina = false;
+  bool triggered1 = false;
+  bool triggered2 = false;
   float testX[] = {};
   float testY[] = {};
   
@@ -93,7 +99,7 @@ void setup() {
   }
   Serial.println("initialization done.");
  
-
+  
 
   
   stepper1.begin(MOTOR_RPM, MICROSTEPS);
@@ -104,110 +110,122 @@ void setup() {
   //stepper1.setSpeedProfile(stepper1.LINEAR_SPEED, MOTOR_ACCEL, MOTOR_DECEL);
  // stepper2.setSpeedProfile(stepper2.LINEAR_SPEED, MOTOR_ACCEL, MOTOR_DECEL);
    
-  AC = sqrt(sq((aX-cX)) + sq((aY-cY))); //1211.012
-  BC = sqrt(sq((bX-cX)) + sq((bY-cY)));
+ // AC = sqrt(sq((aX-cX)) + sq((aY-cY))); //1211.012
+ // BC = sqrt(sq((bX-cX)) + sq((bY-cY)));
 // AC = 31;
 //BC = 32.5;
-  
+
+  Cy = (sq(AB)+sq(ACMax) - sq(BCMax))/(2 *AB);
+  Cx = sqrt(sq(ACMax - sq(Cy));
 }
 
 void loop() {
-
- // if (drawing){
- //    for (pos = 100; pos <= 145; pos += 1) {
-//    myservo.write(pos);              
- //   delay(15);                       // waits 15ms for the servo to reach the position
-//  }
-//  }
   
-  delay (2000);
+  unsigned stepper1Action = stepper1.nextAction();
   
- // for (int i = 0; i < (sizeof(testX) / sizeof(testX[0])); i++){
- // targetCx = testX[i];
- // targetCy = testY[i];
-   File posFile = SD.open ("test.txt", FILE_READ);
-  if(posFile){
+  if(homed == false){
+      stepper1.startMove(round(4/0.0049087421875));
+      homed = true;
+    }
+  if (digitalRead(HOMING1) == HIGH){
+      triggered1 = true;
+  }
+  if (stepper1Action <= 0){
+    if (triggered1){
+      homed = false;
+    }
+    else{
+      homed = true;
+      AC = ACMax;
+    }
     
-      char fileContents[9]; // Probably can be smaller
-   byte index = 0;
-   while (posFile.available()) 
-  {
-      char aChar = posFile.read();
-      if(aChar != '\n' && aChar != '\r')
-      {
-         fileContents[index++] = aChar;
-         fileContents[index] = '\0'; // NULL terminate the array
-      }
-      else // the character is CR or LF
-      {
-        // Serial.print("fileContents: [");
-       //  Serial.print(fileContents);
-       //  Serial.println("]");
-         if(strlen(fileContents) > 0)
-         {
-          if (rocker == 0){
-            X = atof(fileContents);
-            rocker = 1;
-          // Serial.print("X: ");
-          //   Serial.println(X);
-          }
-          else {
-            Y = atof(fileContents);
-            rocker = 0;
-          //  Serial.print("Y: ");
-         //    Serial.println(Y);
-          }
-            //float aVal = atof(fileContents);
+  }
+   
 
-            if (rocker == 0 ){
-              targetCx = X;
-              targetCy = Y;
-               newAC = sqrt(sq((aX-targetCx)) + sq((aY-targetCy)));
-               newBC = sqrt(sq((bX-targetCx)) + sq((bY-targetCy)));
-
-               changeAC = newAC - AC;// 
-               changeBC = BC - newBC;
-               Serial.println(changeAC);
-               if (sqrt(sq(changeAC)) >= 5 || sqrt(sq(changeBC)) >= 5){
-                if (drawing == true){
-                  Serial.println("LOL");
-                 for (servoPos = 140; servoPos >= 110; servoPos -= 1) { // goes from 180 degrees to 0 degrees
-                 servo1.write(servoPos);              // tell servo to go to position in variable 'pos'
-                 delay(15);                       // waits 15ms for the servo to reach the position
-                  }
-                }
-                 drawing = false;                 
-               }
-              else{
-                 if (drawing == false){
-                  for (servoPos = 110; servoPos <= 140; servoPos += 1) { // goes from 0 degrees to 180 degrees
-                 // in steps of 1 degree
-                 servo1.write(servoPos);              // tell servo to go to position in variable 'pos'
-                  delay(15);                       // waits 15ms for the servo to reach the position
-                        }
-                 
-                 
-                 }
-                drawing = true;  
+   File posFile = SD.open ("test.txt", FILE_READ);
+     if(homedFinal){   
+      if(posFile){
+        
+          char fileContents[9]; // Probably can be smaller
+       byte index = 0;
+       while (posFile.available()) 
+      {
+          char aChar = posFile.read();
+          if(aChar != '\n' && aChar != '\r')
+          {
+             fileContents[index++] = aChar;
+             fileContents[index] = '\0'; // NULL terminate the array
+          }
+          else // the character is CR or LF
+          {
+            // Serial.print("fileContents: [");
+           //  Serial.print(fileContents);
+           //  Serial.println("]");
+             if(strlen(fileContents) > 0)
+             {
+              if (rocker == 0){
+                X = atof(fileContents);
+                rocker = 1;
+              // Serial.print("X: ");
+              //   Serial.println(X);
               }
-
-               moveACsteps = round(changeAC/0.0049087421875)*scale;
-               moveBCsteps = round(changeBC/0.0049087421875)*scale;
-              //Serial.println(moveBCsteps);
-              
-              controller.move(moveACsteps,moveBCsteps);
-              
-              AC = newAC;
-              BC = newBC;
-            }
-         }
-
-         fileContents[0] = '\0';
-         index = 0;
-      }
-   }
+              else {
+                Y = atof(fileContents);
+                rocker = 0;
+              //  Serial.print("Y: ");
+             //    Serial.println(Y);
+              }
+                //float aVal = atof(fileContents);
+    
+                if (rocker == 0 ){
+                  targetCx = X;
+                  targetCy = Y;
+                   newAC = sqrt(sq((aX-targetCx)) + sq((aY-targetCy)));
+                   newBC = sqrt(sq((bX-targetCx)) + sq((bY-targetCy)));
+    
+                   changeAC = newAC - AC;// 
+                   changeBC = BC - newBC;
+                   Serial.println(changeAC);
+                   if (sqrt(sq(changeAC)) >= 5 || sqrt(sq(changeBC)) >= 5){
+                    if (drawing == true){
+                      Serial.println("LOL");
+                     for (servoPos = 140; servoPos >= 110; servoPos -= 1) { // goes from 180 degrees to 0 degrees
+                     servo1.write(servoPos);              // tell servo to go to position in variable 'pos'
+                     delay(15);                       // waits 15ms for the servo to reach the position
+                      }
+                    }
+                     drawing = false;                 
+                   }
+                  else{
+                     if (drawing == false){
+                      for (servoPos = 110; servoPos <= 140; servoPos += 1) { // goes from 0 degrees to 180 degrees
+                     // in steps of 1 degree
+                     servo1.write(servoPos);              // tell servo to go to position in variable 'pos'
+                      delay(15);                       // waits 15ms for the servo to reach the position
+                            }
+                     
+                     
+                     }
+                    drawing = true;  
+                  }
+    
+                   moveACsteps = round(changeAC/0.0049087421875)*scale;
+                   moveBCsteps = round(changeBC/0.0049087421875)*scale;
+                  //Serial.println(moveBCsteps);
+                  
+                  controller.move(moveACsteps,moveBCsteps);
+                  
+                  AC = newAC;
+                  BC = newBC;
+                }
+             }
+    
+             fileContents[0] = '\0';
+             index = 0;
+          }
+       }
   
-
+     }
   
   }
 }
