@@ -117,35 +117,61 @@ void setup() {
 // AC = 31;
 //BC = 32.5;
 
-  Cy = (sq(AB)+sq(ACMax) - sq(BCMax))/(2 *AB);
-  Cx = sqrt(sq(ACMax - sq(Cy));
+  cY = (sq(AB)+sq(ACMax) - sq(BCMax))/(2 *AB);
+  cX = sqrt(sq(ACMax - sq(cY)));
 }
 
 void loop() {
   
-  unsigned stepper1Action = stepper1.nextAction();
-  
-  if(homed == false){
-      stepper1.startMove(round(4/0.0049087421875));
-      homed = true;
-    }
-  if (digitalRead(HOMING1) == HIGH){
-      triggered1 = true;
-  }
-  if (stepper1Action <= 0){
-    if (triggered1){
-      homed = false;
-    }
-    else{
-      homed = true;
-      AC = ACMax;
-    }
-    
+// Serial.println(digitalRead(HOMING1));
+if (homedFinal == false){  
+      if(homed1 == false){
+          stepper1.startMove(round(3/0.0049087421875)); // move enough for it to triger at least once
+          homed1 = true;
+        }
+     if(homed2 == false){
+          stepper2.startMove(round(3/0.0049087421875)); // move enough for it to triger at least once
+          homed2 = true;
+        }
+      if (digitalRead(HOMING1) == HIGH){
+          triggered1 = true;
+      
+      }
+      if (digitalRead(HOMING2) == HIGH){
+          triggered2 = true;
+      }
+      
+      if (stepper1.nextAction() <= 0){
+        if (triggered1){
+          homed1 = false;
+          //Serial.println("Still Goint=");
+          triggered1 = false;
+        }
+        else{
+          homed1 = true;
+          AC = ACMax;
+        }
+      }
+       if (stepper2.nextAction() <= 0){
+        if (triggered2){
+          homed2 = false;
+          
+          triggered2 = false;
+        }
+        else{
+          homed2 = true;
+          BC = BCMax;
+        }
+      }
+      if (homed1 && homed2 == true){
+        homedFinal = true;
+      }
   }
    
 
-   File posFile = SD.open ("test.txt", FILE_READ);
+
      if(homedFinal){   
+         File posFile = SD.open ("test.txt", FILE_READ);
       if(posFile){
         
           char fileContents[9]; // Probably can be smaller
