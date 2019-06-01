@@ -78,17 +78,20 @@
   float changeBC;
   int moveACsteps;
   int moveBCsteps;
-  bool homed = true;
-  bool homedFina = false;
+  bool homed1 = false;
+  bool homed2 = false;
+  bool homedFinal = false;
   bool triggered1 = false;
   bool triggered2 = false;
+ 
   float testX[] = {};
   float testY[] = {};
   
   
 void setup() {
 
- 
+  pinMode(HOMING1, INPUT);
+  pinMode(HOMING2, INPUT);
   Serial.begin(9600);
   Serial.print("Initializing SD card...");
    pinMode(10, OUTPUT);
@@ -104,7 +107,6 @@ void setup() {
   
   stepper1.begin(MOTOR_RPM, MICROSTEPS);
   stepper2.begin(MOTOR_RPM, MICROSTEPS);
-
   servo1.attach(6);
   
   //stepper1.setSpeedProfile(stepper1.LINEAR_SPEED, MOTOR_ACCEL, MOTOR_DECEL);
