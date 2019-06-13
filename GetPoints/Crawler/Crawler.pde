@@ -1,6 +1,5 @@
 import geomerative.*;
 import g4p_controls.*;
-//test
 
 RShape grp;
 RPoint[][] points;
@@ -68,11 +67,13 @@ void draw(){
    fill(200);
    rect(0,0,180,height);
    fill(255);
-   rect(200, 15, anchor* scale2, chain * scale2);
-   if ((chain * scale2 >= height - 15) || (anchor * scale2 >= width - 200)){
-     scale2 = scale2 - .01;
+   rect(200, 15, (anchor) * scale2, (chain) * scale2);
+   if ( chain * scale2 >= height){
+       scale2 = (height- 30)/(chain);
    }
- 
+   else if (anchor * scale2 >= width){
+     scale2 = (width - 215)/(anchor);
+   }
     if (moving){
          offsetX = mouseX;
          offsetY = mouseY;
@@ -86,7 +87,7 @@ void draw(){
    grp.draw();
    
      if (render && fileSelected){
-       //grp.scale(scale/100);
+       grp.scale(scale/100);
        points = grp.getPointsInPaths();
        for(int i=0; i<points.length; i++){
          for(int j = 0; j<points[i].length; j++){
@@ -101,7 +102,7 @@ void draw(){
       filePos.flush();
       filePos.close();
       render = false;
-      
+      fileSelected = false;
     }
     
   }
