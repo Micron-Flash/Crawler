@@ -3,22 +3,24 @@ import g4p_controls.*;
 
 RShape grp;
 RPoint[][] points;
+RPoint[][] movePoint;
 PrintWriter filePos;
 
 GButton importButton, exportButton, moveButton;
 GTextField scaleInput , anchorPoints, chainLength;
 GLabel scaleLabel , anchorUnits, chainLabel;
-
+int q = 1;
 String file = "default.svg";
 String scaleString;
-int offsetX;
-int offsetY;
+float offsetX;
+float offsetY;
 
 float scale = 100;
 float scale2 = 1;
 float anchor;
 float chain;
-
+float x3;
+float y3;
 Boolean moving = false;
 Boolean render = false;
 Boolean imp = false;
@@ -30,8 +32,8 @@ void setup() {
   surface.setResizable(true);
   frameRate(60);
   background(250);
-  offsetX = width/2;
-  offsetY = height/2;
+  //offsetX = width/2;
+ // offsetY = height/2;
   RG.init(this);
   
   RG.setPolygonizer(RG.UNIFORMLENGTH);
@@ -68,26 +70,40 @@ void draw(){
    rect(0,0,180,height);
    fill(255);
    rect(200, 15, (anchor) * scale2, (chain) * scale2);
+   grp = RG.loadShape(file);
+   grp.scale((scale/100) * scale2);
+   
+ 
    if ( chain * scale2 >= height){
        scale2 = (height- 30)/(chain);
    }
    else if (anchor * scale2 >= width){
      scale2 = (width - 215)/(anchor);
    }
-    if (moving){
-         offsetX = mouseX;
-         offsetY = mouseY;
+
+  
+    if(moving){
+      if (q == 1){
+      movePoint = grp.getPointsInPaths();
+      x3 = movePoint[1][1].x;
+      y3 = movePoint[1][1].y; 
+      q=0;
+      }
+         offsetX = (mouseX - x3);
+         offsetY = (mouseY - y3);
          if (mousePressed && (mouseButton == LEFT)){
            moving = false;
+          
          }
      }
-   grp = RG.loadShape(file);
-   grp.scale((scale/100) * scale2);
-   grp.translate(offsetX,offsetY);
-   grp.draw();
+  
+    grp.translate(offsetX,offsetY);
+       grp.draw();
    
-     if (render && fileSelected){
+   
+     if (render && fileSelected){  
        grp.scale(scale/100);
+
        points = grp.getPointsInPaths();
        for(int i=0; i<points.length; i++){
          for(int j = 0; j<points[i].length; j++){
@@ -112,10 +128,12 @@ void draw(){
 void handleButtonEvents(GButton button, GEvent event) {
   if (button == importButton){
      imp = true;
+     q = 1;
      selectInput("Select an SVG file:", "fileSelected");
   }
   else if (button == moveButton){
-     moving = true;   
+     moving = true;
+  //   q = 1;
   }
   else if (button == exportButton){
      render = true;   
@@ -143,13 +161,16 @@ void fileSelected(File selection) {
 public void handleTextEvents(GEditableTextControl textControl, GEvent event) { 
    if(textControl == scaleInput){
    scale = Float.parseFloat(textControl.getText());
+   q =1;
    }
    else if (textControl == anchorPoints){
     anchor = Float.parseFloat(textControl.getText());
     scale2 = 1;
+    q = 1;
    }
    else if (textControl == chainLength){
      chain = Float.parseFloat(textControl.getText());
      scale2 =1;
+     q = 1;
    }
 }
