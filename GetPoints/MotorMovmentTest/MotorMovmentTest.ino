@@ -70,8 +70,8 @@
   double cY; // manually measured for now
   int aX = 0;
   int aY = 0;
-  int ACMax = 1400;
-  int BCMax = 1400;
+  int ACMax = 1524;
+  int BCMax = -1524;
   double bX = AB + aX;
   int bY = 0;
   float changeAC; // The amount the motor needs to move inorder to get to the target points
@@ -111,18 +111,38 @@ void setup() {
 
 void loop() {
   if (homedFinal == false){  
-     if ((triggered1 == true) && (stepper1.nextAction() <= 0)){
-      stepper1.startMove (round(4/0.0049087421875));
-       triggered1 = false;
-     }   
-   if (digitalRead(HOMING1) == HIGH){
-     triggered1 = true;  
-   }
-   if (stepper1.nextAction() <= 0){
-      if(triggered1 == false){
-        AC = ACMax;
-        homedFinal = true;
+      if (homed1 == false){
+       if ((triggered1 == true) && (stepper1.nextAction() <= 0)){
+        stepper1.startMove (round(8/0.0049087421875)); // move 8 mm each step inbetween homing. Not super acurate but it has to be larger than the space inbetween the ball chain
+         triggered1 = false;
+       }   
+     if (digitalRead(HOMING1) == HIGH){
+       triggered1 = true;  
+     }
+     if (stepper1.nextAction() <= 0){
+        if(triggered1 == false){
+          AC = ACMax;
+          homed1 = true;
+        }
       }
+    }
+   if ((homed2 == false) && (homed1 == true)){ // it doesnt seem to like doing both at the same time. Hmmm might be a hardware issue?
+    if ((triggered2 == true) && (stepper2.nextAction() <= 0)){
+        stepper2.startMove (round(-8/0.0049087421875));
+         triggered2 = false;
+       }   
+     if (digitalRead(HOMING2) == HIGH){
+       triggered2 = true;  
+     }
+     if (stepper2.nextAction() <= 0){
+        if(triggered2 == false){
+          BC = BCMax;
+          homed2 = true;
+        }
+      }
+    }
+    if ((homed1 == true) && (homed2 == true)){
+      homedFinal = true;
     }
   }
   
@@ -153,7 +173,8 @@ void loop() {
                 newAC = sqrt(sq((aX-targetCx)) + sq((aY-targetCy))); // we find the new length of the chain
                 newBC = sqrt(sq((bX-targetCx)) + sq((bY-targetCy)));
                 changeAC = newAC - AC; // we figure out the difference between the actual and the target length
-                changeBC = BC - newBC; 
+                changeBC = BC - newBC;
+               
                 if (sqrt(sq(changeAC)) >= 5 || sqrt(sq(changeBC)) >= 5){ // We check for a large movement. This usually idicates when the pen should be lifted. (Seems to be working well)
                   if (drawing == true){
                     for (servoPos = 140; servoPos >= 110; servoPos -= 1) {
