@@ -9,7 +9,7 @@
   float Y;
   int rocker = 0;
   bool drawing = true;
-  
+  unsigned long timerHit = 0; 
   #define MOTOR_STEPS 200
   // Target RPM for motors
   #define MOTOR_RPM 60 //starting rpm
@@ -73,6 +73,8 @@
   int ACMax = 1524;
   int BCMax = -1524;
   double bX = AB + aX;
+  bool calibrating1 = true;
+  bool calibrating2 = true;
   int bY = 0;
   float changeAC; // The amount the motor needs to move inorder to get to the target points
   float changeBC;
@@ -83,7 +85,15 @@
   bool homedFinal = false;
   bool triggered1 = false;
   bool triggered2 = false;
- 
+  long timer3A[3];
+  long timer3B[3];
+  long timer2A;
+  long timer2B;
+  long timer1A;
+  long timer1B;
+  long times;
+  bool timer1Running = true;
+  bool timer2Running = true;
   float testX[] = {}; 
   float testY[] = {};
   
@@ -103,48 +113,61 @@ void setup() {
 
   stepper1.begin(MOTOR_RPM, MICROSTEPS);
   stepper2.begin(MOTOR_RPM, MICROSTEPS);
+  stepper1.enable();
   servo1.attach(6);
 
-  cY = (sq(AB)+sq(ACMax) - sq(BCMax))/(2 *AB);
-  cX = sqrt(sq(ACMax - sq(cY)));
+  //cY = (sq(AB)+sq(ACMax) - sq(BCMax))/(2 *AB);
+ // cX = sqrt(sq(ACMax - sq(cY)));
+ 
+  stepper1.startMove(round(ACMax/0.0049087421875)); // Here we are calibrating how long it take for the ball chain to trigger the endstops. We get 4 samples 
+  bool homed2 = false;
+  //controller.startMove(round(ACMax/0.0049087421875),0);
 }
 
+
 void loop() {
-  if (homedFinal == false){  
-      if (homed1 == false){
-       if ((triggered1 == true) && (stepper1.nextAction() <= 0)){
-        stepper1.startMove (round(8/0.0049087421875)); // move 8 mm each step inbetween homing. Not super acurate but it has to be larger than the space inbetween the ball chain
-         triggered1 = false;
-       }   
-     if (digitalRead(HOMING1) == HIGH){
-       triggered1 = true;  
+   
+  // stepper1.startMove(10000000);
+   if (homed2 == false){  
+   for (int i = 0; i <= 4;){
+    unsigned wait_time_micros = stepper1.nextAction();
+     if(timer1Running == true && digitalRead(HOMING1) == LOW){
+       timer1A = millis();
+       timer1Running = false;  
      }
-     if (stepper1.nextAction() <= 0){
-        if(triggered1 == false){
-          AC = ACMax;
-          homed1 = true;
-        }
-      }
-    }
-   if ((homed2 == false) && (homed1 == true)){ // it doesnt seem to like doing both at the same time. Hmmm might be a hardware issue?
-    if ((triggered2 == true) && (stepper2.nextAction() <= 0)){
-        stepper2.startMove (round(-8/0.0049087421875));
-         triggered2 = false;
-       }   
-     if (digitalRead(HOMING2) == HIGH){
-       triggered2 = true;  
+     if(timer1Running == false && digitalRead(HOMING1) == HIGH){
+       timer2A = millis();
+       timer1Running = true;
+       timer3A[i] = timer2A - timer1A;
+       Serial.println(timer3A[i]); 
+       homed2 = true;
+       i++;
      }
-     if (stepper2.nextAction() <= 0){
-        if(triggered2 == false){
-          BC = BCMax;
-          homed2 = true;
-        }
-      }
+   }
+    timer3A[1] = ((timer3A[1] + timer3A[2] + timer3A[3]+ timer3A[4])/4)*1.35;  // we dont want to use to first number since we don't know where the chain starts. Could give a wrong number. We give it a 35% margine of error. 
+   }
+ if (homed2 == true){
+   unsigned wait_time_micros = stepper1.nextAction();
+   if(timer1Running == true && digitalRead(HOMING1) == LOW){ // we start timmer when there is nothing
+      timer1A = millis();
+      timer1Running = false;
+     }
+    if(timer1Running == false && digitalRead(HOMING1) == HIGH){ // resets timer here
+      timer2A = millis();
+      timer1Running = true;
     }
-    if ((homed1 == true) && (homed2 == true)){
+    if(timer1Running == false && digitalRead(HOMING1) == LOW){ // here we check to see if there is too much time passing
+      timer2A = millis();
+      if (timer2A - timer1A > timer3A[1]){
+        Serial.println("Homed"); 
+      stepper1.stop();
+      AC = ACMax;
       homedFinal = true;
+      }
     }
-  }
+   }
+  
+  
   
    if(homedFinal){   
        File posFile = SD.open ("test.txt", FILE_READ); // !!!Change the file name on this to what ever you will put on the SD card!!!!
