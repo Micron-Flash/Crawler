@@ -83,6 +83,7 @@
   bool homed1 = false;
   bool homed2 = false;
   bool homedFinal = false;
+  bool homedFinal2 = false;
   bool triggered1 = false;
   bool triggered2 = false;
   long timer3A[3];
@@ -119,7 +120,7 @@ void setup() {
   //cY = (sq(AB)+sq(ACMax) - sq(BCMax))/(2 *AB);
  // cX = sqrt(sq(ACMax - sq(cY)));
  
-  stepper1.startMove(round(ACMax/0.0049087421875)); // Here we are calibrating how long it take for the ball chain to trigger the endstops. We get 4 samples 
+  stepper1.startMove(round(ACMax/0.0049087421875)); // start the motor movement to home
   bool homed2 = false;
   //controller.startMove(round(ACMax/0.0049087421875),0);
 }
@@ -128,7 +129,7 @@ void setup() {
 void loop() {
    
   // stepper1.startMove(10000000);
-   if (homed2 == false){  
+   if (homed1 == false){  //Motor 1                    // Here we are calibrating how long it take for the ball chain to trigger the endstops. We get 4 samples 
    for (int i = 0; i <= 4;){
     unsigned wait_time_micros = stepper1.nextAction();
      if(timer1Running == true && digitalRead(HOMING1) == LOW){
@@ -140,37 +141,79 @@ void loop() {
        timer1Running = true;
        timer3A[i] = timer2A - timer1A;
        Serial.println(timer3A[i]); 
-       homed2 = true;
+       homed1 = true;
        i++;
      }
    }
-    timer3A[1] = ((timer3A[1] + timer3A[2] + timer3A[3]+ timer3A[4])/4)*1.35;  // we dont want to use to first number since we don't know where the chain starts. Could give a wrong number. We give it a 35% margine of error. 
-   }
- if (homed2 == true){
-   unsigned wait_time_micros = stepper1.nextAction();
-   if(timer1Running == true && digitalRead(HOMING1) == LOW){ // we start timmer when there is nothing
-      timer1A = millis();
-      timer1Running = false;
+   timer3A[1] = ((timer3A[1] + timer3A[2] + timer3A[3]+ timer3A[4])/4)*1.35;  // we dont want to use to first number since we don't know where the chain starts. Could give a wrong number. We give it a 35% margine of error. Probably could be less but this should give a constistant result
+ 
+  }
+
+ if (homed1 == true && homed2 == false){ // calibrating the 2nd motor
+   for (int i = 0; i <= 4;){
+    unsigned wait_time_micros2 = stepper2.nextAction();
+     if(timer2Running == true && digitalRead(HOMING2) == LOW){
+       timer1B = millis();
+       timer2Running = false;  
      }
-    if(timer1Running == false && digitalRead(HOMING1) == HIGH){ // resets timer here
-      timer2A = millis();
-      timer1Running = true;
+     if(timer2Running == false && digitalRead(HOMING2) == HIGH){
+       timer2B = millis();
+       timer2Running = true;
+       timer3B[i] = timer2B - timer1B;
+       Serial.println(timer3B[i]);
+       homed2 = true;
+       i++;
+     }
+
+  }
+    timer3B[1] = ((timer3B[1] + timer3B[2] + timer3B[3]+ timer3B[4])/4)*1.35;
+}
+   
+if (homed1 == true && homed2 == true){
+ unsigned wait_time_micros = stepper1.nextAction();
+ unsigned wait_time_micros2 = stepper2.nextAction();
+ if(timer1Running == true && digitalRead(HOMING1) == LOW){ // we start timmer when there is nothing in front of the sensor
+    timer1A = millis();
+    timer1Running = false;
+   }
+  if(timer1Running == false && digitalRead(HOMING1) == HIGH){ // resets timer here
+    timer2A = millis();
+    timer1Running = true;
+  }
+  if(timer1Running == false && digitalRead(HOMING1) == LOW){ // here we check to see if there is too much time passing
+    timer2A = millis();
+    if (timer2A - timer1A > timer3A[1]){
+      Serial.println("Homed"); 
+    stepper1.stop();
+    AC = ACMax;
+    homedFinal = true;
     }
-    if(timer1Running == false && digitalRead(HOMING1) == LOW){ // here we check to see if there is too much time passing
-      timer2A = millis();
-      if (timer2A - timer1A > timer3A[1]){
-        Serial.println("Homed"); 
-      stepper1.stop();
-      AC = ACMax;
-      homedFinal = true;
+  }
+
+      
+     if(timer2Running == true && digitalRead(HOMING2) == LOW){ // we start timmer when there is nothing in front of the sensor
+      timer1B = millis();
+      timer2Running = false;
+     }
+    if(timer2Running == false && digitalRead(HOMING2) == HIGH){ // resets timer here
+      timer2B = millis();
+      timer2Running = true;
+    }
+    if(timer2Running == false && digitalRead(HOMING2) == LOW){ // here we check to see if there is too much time passing
+      timer2B = millis();
+      if (timer2B - timer1B > timer3B[1]){
+        Serial.println("Homed 2"); 
+      stepper2.stop();
+      BC = BCMax;
+      homedFinal2 = true;
       }
     }
    }
+
   
   
-  
-   if(homedFinal){   
-       File posFile = SD.open ("test.txt", FILE_READ); // !!!Change the file name on this to what ever you will put on the SD card!!!!
+   if(homedFinal == true && homedFinal2 == true){   
+       File posFile = SD.open ("test.txt", FILE_READ); // !!!Change the file name on this to whatever you will put on the SD card!!!!
      if(posFile){
        char fileContents[9]; // Probably can be smaller
        byte index = 0;
@@ -182,7 +225,7 @@ void loop() {
          }
          else{
            if(strlen(fileContents) > 0){
-             if (rocker == 0){ // we will use the rocker to set the first 5 or 6 numbers on the fille to set machine settings
+             if (rocker == 0){ // we will use the rocker to set the first 5 or 6 numbers on the fille to set machine settings. ie: machine size (Not Implemented)
                X = atof(fileContents);
                rocker = 1;
              }
@@ -198,7 +241,7 @@ void loop() {
                 changeAC = newAC - AC; // we figure out the difference between the actual and the target length
                 changeBC = BC - newBC;
                
-                if (sqrt(sq(changeAC)) >= 5 || sqrt(sq(changeBC)) >= 5){ // We check for a large movement. This usually idicates when the pen should be lifted. (Seems to be working well)
+                if (sqrt(sq(changeAC)) >= 5 || sqrt(sq(changeBC)) >= 5){ // We check for a large movement. This usually idicates when the pen should be lifted. (Seems to be working well and consistant)
                   if (drawing == true){
                     for (servoPos = 140; servoPos >= 110; servoPos -= 1) {
                       servo1.write(servoPos);             
@@ -211,7 +254,7 @@ void loop() {
                     if (drawing == false){
                       for (servoPos = 110; servoPos <= 140; servoPos += 1) { 
                         servo1.write(servoPos);              
-                        delay(15);                       
+                        delay(15);               
                       }
                     }
                     drawing = true;  
