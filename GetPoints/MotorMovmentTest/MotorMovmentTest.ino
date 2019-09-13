@@ -70,8 +70,8 @@
   double cY; // manually measured for now
   int aX = 0;
   int aY = 0;
-  int ACMax = 1524;
-  int BCMax = -1524;
+  int ACMax = 2524;
+  int BCMax = 2524;
   double bX = AB + aX;
   bool calibrating1 = true;
   bool calibrating2 = true;
@@ -86,8 +86,8 @@
   bool homedFinal2 = false;
   bool triggered1 = false;
   bool triggered2 = false;
-  long timer3A[3];
-  long timer3B[3];
+  long timer3A[4];
+  long timer3B[4];
   long timer2A;
   long timer2B;
   long timer1A;
@@ -120,7 +120,8 @@ void setup() {
   //cY = (sq(AB)+sq(ACMax) - sq(BCMax))/(2 *AB);
  // cX = sqrt(sq(ACMax - sq(cY)));
  
-  stepper1.startMove(round(ACMax/0.0049087421875)); // start the motor movement to home
+  //stepper1.startMove(round(ACMax/0.0049087421875));
+ //  stepper2.startMove(round(-BCMax/0.0049087421875));// start the motor movement to home
   bool homed2 = false;
   //controller.startMove(round(ACMax/0.0049087421875),0);
 }
@@ -129,9 +130,11 @@ void setup() {
 void loop() {
    
   // stepper1.startMove(10000000);
-   if (homed1 == false){  //Motor 1                    // Here we are calibrating how long it take for the ball chain to trigger the endstops. We get 4 samples 
+   if (homed1 == false){  //Motor 1     
+    stepper1.startMove(round(ACMax/0.0049087421875));// Here we are calibrating how long it take for the ball chain to trigger the endstops. We get 4 samples 
    for (int i = 0; i <= 4;){
-    unsigned wait_time_micros = stepper1.nextAction();
+    
+    stepper1.nextAction();
      if(timer1Running == true && digitalRead(HOMING1) == LOW){
        timer1A = millis();
        timer1Running = false;  
@@ -140,38 +143,20 @@ void loop() {
        timer2A = millis();
        timer1Running = true;
        timer3A[i] = timer2A - timer1A;
-       Serial.println(timer3A[i]); 
+    //   Serial.println(timer3A[i]); 
        homed1 = true;
        i++;
      }
    }
-   timer3A[1] = ((timer3A[1] + timer3A[2] + timer3A[3]+ timer3A[4])/4)*1.35;  // we dont want to use to first number since we don't know where the chain starts. Could give a wrong number. We give it a 35% margine of error. Probably could be less but this should give a constistant result
+   timer3A[1] = ((timer3A[1] + timer3A[2] + timer3A[3]+ timer3A[4])/4)*1.50;  // we dont want to use to first number since we don't know where the chain starts. Could give a wrong number. We give it a 50% margine of error. Probably could be less but this should give a constistent result
  
-  }
+  } 
 
- if (homed1 == true && homed2 == false){ // calibrating the 2nd motor
-   for (int i = 0; i <= 4;){
-    unsigned wait_time_micros2 = stepper2.nextAction();
-     if(timer2Running == true && digitalRead(HOMING2) == LOW){
-       timer1B = millis();
-       timer2Running = false;  
-     }
-     if(timer2Running == false && digitalRead(HOMING2) == HIGH){
-       timer2B = millis();
-       timer2Running = true;
-       timer3B[i] = timer2B - timer1B;
-       Serial.println(timer3B[i]);
-       homed2 = true;
-       i++;
-     }
 
-  }
-    timer3B[1] = ((timer3B[1] + timer3B[2] + timer3B[3]+ timer3B[4])/4)*1.35;
-}
    
-if (homed1 == true && homed2 == true){
- unsigned wait_time_micros = stepper1.nextAction();
- unsigned wait_time_micros2 = stepper2.nextAction();
+if (homed1 == true){
+ stepper1.nextAction(); 
+
  if(timer1Running == true && digitalRead(HOMING1) == LOW){ // we start timmer when there is nothing in front of the sensor
     timer1A = millis();
     timer1Running = false;
@@ -183,14 +168,37 @@ if (homed1 == true && homed2 == true){
   if(timer1Running == false && digitalRead(HOMING1) == LOW){ // here we check to see if there is too much time passing
     timer2A = millis();
     if (timer2A - timer1A > timer3A[1]){
-      Serial.println("Homed"); 
+   //   Serial.println("Homed"); 
     stepper1.stop();
     AC = ACMax;
     homedFinal = true;
     }
   }
+}
+  
+ if (homedFinal == true && homed2 == false){ // calibrating the 2nd motor
+     stepper2.startMove(round(-BCMax/0.0049087421875));
+   for (int i = 0; i <= 4;){
+     stepper2.nextAction();
+     if(timer2Running == true && digitalRead(HOMING2) == LOW){
+       timer1B = millis();
+       timer2Running = false;  
+     }
+     if(timer2Running == false && digitalRead(HOMING2) == HIGH){
+       timer2B = millis();
+       timer2Running = true;
+       timer3B[i] = timer2B - timer1B;
+      // Serial.println(timer3B[i]);
+       homed2 = true;
+       i++;
+     }
 
-      
+  }
+    timer3B[1] = ((timer3B[1] + timer3B[2] + timer3B[3]+ timer3B[4])/4)*1.50;
+}
+
+ if(homedFinal == true && homed2 == true){
+     stepper2.nextAction();
      if(timer2Running == true && digitalRead(HOMING2) == LOW){ // we start timmer when there is nothing in front of the sensor
       timer1B = millis();
       timer2Running = false;
@@ -202,7 +210,7 @@ if (homed1 == true && homed2 == true){
     if(timer2Running == false && digitalRead(HOMING2) == LOW){ // here we check to see if there is too much time passing
       timer2B = millis();
       if (timer2B - timer1B > timer3B[1]){
-        Serial.println("Homed 2"); 
+      //Serial.println("Homed 2"); 
       stepper2.stop();
       BC = BCMax;
       homedFinal2 = true;
