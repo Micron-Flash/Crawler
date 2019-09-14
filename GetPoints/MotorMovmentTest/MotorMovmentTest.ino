@@ -9,9 +9,7 @@
   float Y;
   int rocker = 0;
   bool drawing = true;
-  unsigned long timerHit = 0; 
-  #define MOTOR_STEPS 200
-  // Target RPM for motors
+  #define MOTOR_STEPS 200// Target RPM for motors
   #define MOTOR_RPM 60 //starting rpm
   #define MOTOR_ACCEL 200
   #define MOTOR_DECEL 100
@@ -25,7 +23,7 @@
   #define MICROSTEPS 16 // Microstepping 
   /*
    200  full steps * 16 = 3200 steps per rotation + 1:4 gear ratio
-   2.51307087 in per rotation
+   63.832000098 mm per rotation
    12,800 steps per rotation
   */
   BasicStepperDriver stepper1(MOTOR_STEPS, DIR_1, STEP_1);
@@ -58,10 +56,10 @@
                   
   */
   
-  const double AB = 1270; //mm
+  const double AB = 990; //mm
   double scale = 1;
-  float AC;
-  float BC;
+  float AC = 1524;
+  float BC = 1524;
   float newAC;
   float newBC;
   float targetCx;
@@ -70,22 +68,18 @@
   double cY; // manually measured for now
   int aX = 0;
   int aY = 0;
-  int ACMax = 2524;
-  int BCMax = 2524;
+  int ACMax = 1524;
+  int BCMax = 1524;
   double bX = AB + aX;
-  bool calibrating1 = true;
-  bool calibrating2 = true;
   int bY = 0;
   float changeAC; // The amount the motor needs to move inorder to get to the target points
   float changeBC;
-  int moveACsteps;
-  int moveBCsteps;
+  float moveACsteps;
+  float moveBCsteps;
   bool homed1 = false;
   bool homed2 = false;
-  bool homedFinal = false;
-  bool homedFinal2 = false;
-  bool triggered1 = false;
-  bool triggered2 = false;
+  bool homedFinal = true;
+  bool homedFinal2 = true;
   long timer3A[4];
   long timer3B[4];
   long timer2A;
@@ -95,8 +89,6 @@
   long times;
   bool timer1Running = true;
   bool timer2Running = true;
-  float testX[] = {}; 
-  float testY[] = {};
   
   
 void setup() {
@@ -128,8 +120,7 @@ void setup() {
 
 
 void loop() {
-   
-  // stepper1.startMove(10000000);
+    
    if (homed1 == false){  //Motor 1     
     stepper1.startMove(round(ACMax/0.0049087421875));// Here we are calibrating how long it take for the ball chain to trigger the endstops. We get 4 samples 
    for (int i = 0; i <= 4;){
@@ -247,8 +238,9 @@ if (homed1 == true){
                 newAC = sqrt(sq((aX-targetCx)) + sq((aY-targetCy))); // we find the new length of the chain
                 newBC = sqrt(sq((bX-targetCx)) + sq((bY-targetCy)));
                 changeAC = newAC - AC; // we figure out the difference between the actual and the target length
-                changeBC = BC - newBC;
-               
+                changeBC = newBC - BC;
+            //    Serial.println((String)"AC: " + newAC + " : " + changeAC);
+              // Serial.println((String)"BC: " + newBC + " : " + changeBC);
                 if (sqrt(sq(changeAC)) >= 5 || sqrt(sq(changeBC)) >= 5){ // We check for a large movement. This usually idicates when the pen should be lifted. (Seems to be working well and consistant)
                   if (drawing == true){
                     for (servoPos = 140; servoPos >= 110; servoPos -= 1) {
@@ -267,9 +259,11 @@ if (homed1 == true){
                     }
                     drawing = true;  
                   }
-                  moveACsteps = round(changeAC/0.0049087421875)*scale; // we move the amount of stepps it will take to move the chain a certain amount of mm. The long number is the conversion of steps to mm (example: to move 1 mm it would take 203.718 steps)
-                  moveBCsteps = round(changeBC/0.0049087421875)*scale;
-                  controller.move(moveACsteps,moveBCsteps);
+                  Serial.println((String)changeAC + "A");
+                  Serial.println((String)changeBC + "B");
+                  moveACsteps = (changeAC/0.0049087421875); // we move the amount of stepps it will take to move the chain a certain amount of mm. The long number is the conversion of steps to mm (example: to move 1 mm it would take 203.718 steps)
+                  moveBCsteps = (changeBC/0.0049087421875);
+                  controller.move(moveACsteps,-moveBCsteps);
                   AC = newAC;
                   BC = newBC;
              }
