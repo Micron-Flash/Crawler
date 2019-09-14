@@ -58,8 +58,8 @@
   
   const double AB = 990; //mm
   double scale = 1;
-  float AC = 1524;
-  float BC = 1524;
+  float AC;
+  float BC;
   float newAC;
   float newBC;
   float targetCx;
@@ -78,8 +78,8 @@
   float moveBCsteps;
   bool homed1 = false;
   bool homed2 = false;
-  bool homedFinal = true;
-  bool homedFinal2 = true;
+  bool homedFinal = false;
+  bool homedFinal2 = false;
   long timer3A[4];
   long timer3B[4];
   long timer2A;
