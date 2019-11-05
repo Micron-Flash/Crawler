@@ -1,3 +1,28 @@
+/*MIT License
+
+Copyright (c) 2019 Hunter Movius
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.*/
+
+  
+  
+  
   #include <Arduino.h>
   #include "BasicStepperDriver.h"
   #include "MultiDriver.h"
@@ -56,7 +81,7 @@
                   
   */
   
-  const double AB = 990; //mm
+  const double AB = 860; //mm
   double scale = 1;
   float AC;
   float BC;
@@ -68,8 +93,8 @@
   double cY; // manually measured for now
   int aX = 0;
   int aY = 0;
-  int ACMax = 1524;
-  int BCMax = 1524;
+  int ACMax = 1384; // this is 140mm shorter than the chain length
+  int BCMax = 1384;
   double bX = AB + aX;
   int bY = 0;
   float changeAC; // The amount the motor needs to move inorder to get to the target points
@@ -145,7 +170,7 @@ void loop() {
 
 
    
-if (homed1 == true){
+if (homed1 == true && homedFinal == false){
  stepper1.nextAction(); 
 
  if(timer1Running == true && digitalRead(HOMING1) == LOW){ // we start timmer when there is nothing in front of the sensor
@@ -188,7 +213,7 @@ if (homed1 == true){
     timer3B[1] = ((timer3B[1] + timer3B[2] + timer3B[3]+ timer3B[4])/4)*1.50;
 }
 
- if(homedFinal == true && homed2 == true){
+ if(homedFinal == true && homed2 == true && homedFinal2 == false){
      stepper2.nextAction();
      if(timer2Running == true && digitalRead(HOMING2) == LOW){ // we start timmer when there is nothing in front of the sensor
       timer1B = millis();
@@ -259,8 +284,8 @@ if (homed1 == true){
                     }
                     drawing = true;  
                   }
-                  Serial.println((String)changeAC + "A");
-                  Serial.println((String)changeBC + "B");
+                 // Serial.println((String)changeAC + "A");
+                 //Serial.println((String)changeBC + "B");
                   moveACsteps = (changeAC/0.0049087421875); // we move the amount of stepps it will take to move the chain a certain amount of mm. The long number is the conversion of steps to mm (example: to move 1 mm it would take 203.718 steps)
                   moveBCsteps = (changeBC/0.0049087421875);
                   controller.move(moveACsteps,-moveBCsteps);
