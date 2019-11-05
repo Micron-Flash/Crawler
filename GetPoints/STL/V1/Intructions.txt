@@ -1,0 +1,17 @@
+Intructions for DrawBot STLs:
+-------------------------------------------------
+1x-"MainBody.stl"- Print: 0.2mm Layer Height, 20% Infil, No Support
+1x-"LeftChainGearDrive.stl"- Print 0.2mm Layer Height, 20% Infil, Yes Support. Cut out center hole with exacto knife and edge cutters
+1x-"RightChainGearDrive.stl"- Print 0.2mm Layer Height, 20% Infil, Yes Support. Cut out center hole with exacto knife and edge cutters
+2x-"BallChainGear"- Print: 0.2mm Layer Height, 20% Infil, No Support
+1x-"RightEndStopMount.stl"- 0.2mm Layer Height, 20% Infil, No Support
+1x-"LeftEndStopMount.stl" - 0.2mm Layer Height, 20% Infil, No Support
+2x-"EndStopCover.stl"- 0.2mm Layer Height, 20% Infil, No Support
+1x-"ServoArm.stl"- 0.2mm Layer Height, 20% Infil, No Support
+1x-"ExpoHolder"- 0.2mm Layer Height, 20% Infil, No Support
+1x-"Balancer.stl"- 0.2mm Layer Height, 20% Infil, No Support
+6x-"Spacer1.stl"- 0.2mm Layer Height, 20% Infil, No Support
+2x-"Spacer2.stl"- 0.2mm Layer Height, 20% Infil, No Support
+2x-"Spacer3.stl"- 0.2mm Layer Height, 20% Infil, No Support
+4x-"Bearing.stl"- 0.2mm Layer Height, 20% Infil, No Support
+2x-"Compact_Planetary_Gearbox_v2_sep.stl"- https://www.thingiverse.com/thing:2114390

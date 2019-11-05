@@ -1,0 +1,25 @@
+1x: Arduino Nano
+
+2x: Nema 17 Stepper Motors 
+
+1x: L7805, https://www.amazon.com/gp/product/B00PNEQI7W
+
+1x: Adafruit MicroSD card breakout board
+
+1x: 9g Servo
+
+1x: Button, https://www.amazon.com/Cylewet-Self-Locking-Latching-Button-CYT1091/dp/B075VBV4QH
+
+2x: optical endstop, https://www.amazon.com/Optical-Endstop-Photoelectric-Control-Printer/dp/B07MFT8NWJ
+
+2x: a4988 stepper motor driver
+
+2x: 47u Cap
+
+1x: 10u Cap
+
+1x: 1u Cap
+
+1x: 12v 2A power supply
+
+PCB headers - https://www.amazon.com/2-54mm-Breakaway-Female-Connector-Arduino/dp/B01MQ48T2V
