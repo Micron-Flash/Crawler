@@ -31,34 +31,48 @@ RPoint[][] movePoint;
 RPoint[][] linePoint;
 PrintWriter filePos;
 
-GButton importButton, exportButton, moveButton;
+GButton importButton, exportButton, moveButton, settingsButton, load, save;
 GTextField scaleInput , anchorPoints, chainLength, whiteBoardXSize, whiteBoardYSize, whiteBoardOffset;
+GWindow settingsWindow;
+
 
 int q = 1;
 String file = "default.svg";
+String profile = "Default.txt";
+String [] rawProfile;
 String scaleString;
 float offsetX ;
 float offsetY;
-
+Boolean settingDraw = true;
 float scale = 100;
 float scale2 = 1;
 float anchor;
 float chain;
+float whiteboardL;
+float whiteboardH;
+float whiteboardVOffset;
+float whiteboardHOffset;
 float x3;
 float y3;
 Boolean moving = false;
 Boolean render = false;
 Boolean imp = false;
 Boolean fileSelected = false;
+Settings settings;
+PApplet apps;
+
 
 void setup() {
+  G4P.setGlobalColorScheme(5);
   
+  getSettings();
   size(1200, 800);  
   surface.setResizable(true);
   frameRate(60);
   background(250);
   offsetX = width/2; // try and set the  default image to the center of the screen
   offsetY = height/2;
+  getSettings();
   RG.init(this);
   
   RG.setPolygonizer(RG.UNIFORMLENGTH);
@@ -75,46 +89,24 @@ void setup() {
   scaleInput.setText("100");
   
   GLabel scaleLabel = new GLabel(this, 29 , 90 , 120, 20, "%  SVG scale");
- 
-  anchorPoints = new GTextField(this, 5 , 115 , 140 , 20);
-  anchorPoints.setPromptText("Length Between Anchors");
   
-  GLabel anchorUnits = new GLabel(this, 145, 115, 25, 20 , "mm");
-  
-  chainLength = new GTextField(this, 5 , 140 , 140, 20);
-  chainLength.setPromptText("Chain Length");
-  
-  GLabel chainLabel = new GLabel(this, 145 , 140, 140,20, "mm");
-  
-  GLabel whiteBoard = new GLabel(this, 5 , 165, 150,20, "Whiteboard:");
-  
-  whiteBoardXSize = new GTextField(this, 5 , 190, 50,20);
-  whiteBoardXSize.setPromptText("Width");
-  GLabel mmX = new GLabel(this, 55, 190, 50,20,"mm");
-  
-  whiteBoardYSize = new GTextField(this, 80 , 190, 50,20);
-  whiteBoardYSize.setPromptText("Height");
-  GLabel mmY = new GLabel(this, 130, 190, 50,20,"mm");
-  
-  GLabel whiteBoardLabel = new GLabel(this, 5, 215, 200,20, "Distance From top anchor");
-  
-  whiteBoardOffset = new GTextField(this, 5 , 235, 50,20);
-  GLabel whiteBoardLabel2 = new GLabel(this, 55 , 235, 50,20, "mm");
-  
+   settingsButton = new GButton(this , 5 , 115 , 170 , 20,"Settings");
+
 }
 
 void draw(){
+  
    translate(0,0);
    background(240);
    stroke(0);
    fill(200);
    rect(0,0,180,height);
-   fill(255);
+   fill(150);
    rect(200, 15, (anchor) * scale2, (chain) * scale2); // this will draw the workspace based on the distance between the anchors and chain length
+   fill(255);
+   rect(200+(whiteboardHOffset*scale2),(whiteboardVOffset*scale2)+15,whiteboardL*scale2,whiteboardH*scale2);
    grp = RG.loadShape(file);
    grp.scale((scale/100) * scale2); // there are 2 different scales. scale2 is hidden and is adjusted based on the size of the screen. scale is user defined and will make the end image larger or smaller
-   
- 
    if ( chain * scale2 >= height){  // here we will automatically adjust the workspace to fit on the screen
        scale2 = (height- 30)/(chain);
    }
@@ -130,6 +122,9 @@ void draw(){
       }
          offsetX = (mouseX - x3);
          offsetY = (mouseY - y3);
+         fill(10);
+         text("X: "+ ((mouseX-200)/scale2), 15, height-25 );
+         text("Y: "+ ((mouseY-15)/scale2),15, height-10 );
          if (mousePressed && (mouseButton == LEFT)){
            moving = false;
           
@@ -137,18 +132,12 @@ void draw(){
      }
        line(200, 15, offsetX + x3,offsetY + y3);
        line((anchor) * scale2 + 200, 15, offsetX+ x3,offsetY+ y3); // this shows the lines where the robot will start. right now its not very usefull but I plan on adding a max length to show the lowest point the robot can go to prevent it falling
-       
+
        grp.translate(offsetX,offsetY);
        grp.draw();
    
    
      if (render && fileSelected){ 
-       
-     //   points = grp.getPointsInPaths();
-    //  filePos.println(scale2/(points[0][0].x-200));
-    //  filePos.println(scale2/(points[0][0].y-15));
-      // grp.scale(scale/100);
-      // grp.translate(offsetX,offsetY);
        points = grp.getPointsInPaths();
        for(int i=0; i<points.length; i++){
          for(int j = 0; j<points[i].length; j++){
@@ -184,6 +173,10 @@ void handleButtonEvents(GButton button, GEvent event) {
      render = true;   
      selectOutput("Select a file to write to:", "fileSelected");
   }
+  else if (button == settingsButton){
+    openSettings();
+  }
+  
 }
 
 
@@ -219,7 +212,46 @@ public void handleTextEvents(GEditableTextControl textControl, GEvent event) {
      q = 1;
    }
    else if (textControl == whiteBoardXSize){
-    anchor = Float.parseFloat(textControl.getText());
+   // anchor = Float.parseFloat(textControl.getText());
     
    }
 }
+
+void openSettings(){
+  settingDraw = true;
+  settingsWindow =  GWindow.getWindow(this, "Settings", 100, 50, 350, 400, JAVA2D);
+  settingsWindow.addDrawHandler(this, "windowDraw");
+  settings = new Settings(settingsWindow, profile);
+}
+
+public void windowDraw(PApplet app, GWinData data){
+    app.background(240);
+}
+
+
+void getSettings(){
+  
+  rawProfile = loadStrings(profile);
+  for (int i = 0; i <= 5; i++){
+   switch(i){
+      case 0:
+      anchor = Float.parseFloat(rawProfile[i]);
+      break;
+      case 1:
+      chain = Float.parseFloat(rawProfile[i]);
+      break;
+      case 2:
+      whiteboardL = Float.parseFloat(rawProfile[i]);
+      break;
+      case 3:
+      whiteboardH = Float.parseFloat(rawProfile[i]);
+      break;
+      case 4:
+      whiteboardVOffset = Float.parseFloat(rawProfile[i]);
+      break;
+      case 5:
+      whiteboardHOffset = Float.parseFloat(rawProfile[i]);
+      break;
+     }
+   }
+  }
