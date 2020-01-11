@@ -30,6 +30,7 @@ SOFTWARE.*/
   #include <SD.h>
   
   File posFile;
+ 
   float X;
   float Y;
   int rocker = 0;
@@ -288,6 +289,20 @@ if (homed1 == true && homedFinal == false){
                  //Serial.println((String)changeBC + "B");
                   moveACsteps = (changeAC/0.0049087421875); // we move the amount of stepps it will take to move the chain a certain amount of mm. The long number is the conversion of steps to mm (example: to move 1 mm it would take 203.718 steps)
                   moveBCsteps = (changeBC/0.0049087421875);
+                  
+                  if ( fabsf(moveACsteps) > fabsf(moveBCsteps)){ // motion smoothing should make it so both motors get to the target points at the same time
+                      stepper1.setRPM(MOTOR_RPM);
+                      stepper2.setRPM((((((MOTOR_RPM * 200)/60) / fabsf(moveACsteps))* fabsf(moveBCsteps))*60)/200); // This formula will check the time it will take the longer side to complete and set the rpm to match the shorter side so they are turning for the same time 
+                  }
+                  else if (fabsf(moveBCsteps) < fabsf(moveACsteps)){
+                      stepper2.setRPM(MOTOR_RPM);
+                      stepper1.setRPM((((((MOTOR_RPM * 200)/60) / fabsf(moveBCsteps))* fabsf(moveACsteps))*60)/200); 
+                  }
+                  else {
+                    stepper1.setRPM(MOTOR_RPM);
+                    stepper2.setRPM(MOTOR_RPM);
+                    
+                  }
                   controller.move(moveACsteps,-moveBCsteps);
                   AC = newAC;
                   BC = newBC;
