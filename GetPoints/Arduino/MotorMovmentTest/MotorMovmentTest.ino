@@ -30,6 +30,7 @@ SOFTWARE.*/
   #include <SD.h>
   
   File posFile;
+ 
   float X;
   float Y;
   int rocker = 0;
@@ -81,8 +82,7 @@ SOFTWARE.*/
                   
   */
   
-  const double AB = 860; //mm
-  double scale = 1;
+  double AB; //mm
   float AC;
   float BC;
   float newAC;
@@ -93,9 +93,9 @@ SOFTWARE.*/
   double cY; // manually measured for now
   int aX = 0;
   int aY = 0;
-  int ACMax = 1384; // this is 140mm shorter than the chain length
-  int BCMax = 1384;
-  double bX = AB + aX;
+  int ACMax; // this is 140mm shorter than the chain length
+  int BCMax;
+  double bX;
   int bY = 0;
   float changeAC; // The amount the motor needs to move inorder to get to the target points
   float changeBC;
@@ -140,7 +140,8 @@ void setup() {
   //stepper1.startMove(round(ACMax/0.0049087421875));
  //  stepper2.startMove(round(-BCMax/0.0049087421875));// start the motor movement to home
   bool homed2 = false;
-  //controller.startMove(round(ACMax/0.0049087421875),0);
+  controller.move(-30/0.0049087421875,30/0.0049087421875);
+  getSettings();
 }
 
 
@@ -288,6 +289,20 @@ if (homed1 == true && homedFinal == false){
                  //Serial.println((String)changeBC + "B");
                   moveACsteps = (changeAC/0.0049087421875); // we move the amount of stepps it will take to move the chain a certain amount of mm. The long number is the conversion of steps to mm (example: to move 1 mm it would take 203.718 steps)
                   moveBCsteps = (changeBC/0.0049087421875);
+                  
+                  if ( fabs(moveACsteps) > fabs(moveBCsteps)){ // motion smoothing should make it so both motors get to the target points at the same time
+                      stepper1.setRPM(MOTOR_RPM);
+                      stepper2.setRPM((((((MOTOR_RPM * 200)/60) / fabs(moveACsteps))* fabs(moveBCsteps))*60)/200); // This formula will check the time it will take the longer side to complete and set the rpm to match the shorter side so they are turning for the same time 
+                  }
+                  else if (fabs(moveBCsteps) > fabs(moveACsteps)){
+                      stepper2.setRPM(MOTOR_RPM);
+                      stepper1.setRPM((((((MOTOR_RPM * 200)/60) / fabs(moveBCsteps))* fabs(moveACsteps))*60)/200); 
+                  }
+                  else {
+                    stepper1.setRPM(MOTOR_RPM);
+                    stepper2.setRPM(MOTOR_RPM);
+                    
+                  }
                   controller.move(moveACsteps,-moveBCsteps);
                   AC = newAC;
                   BC = newBC;
@@ -301,7 +316,39 @@ if (homed1 == true && homedFinal == false){
    }
 }
 
-
+void getSettings(){
+    File setFile = SD.open ("settings.txt", FILE_READ);
+    if(setFile){
+       char fileContents[9]; // Probably can be smaller
+       byte index = 0;
+       while (setFile.available()){
+         char aChar = setFile.read();
+         if(aChar != '\n' && aChar != '\r'){
+           fileContents[index++] = aChar;
+           fileContents[index] = '\0';
+         }
+         else{
+           if(strlen(fileContents) > 0){
+            if (rocker == 0){ // we will use the rocker to set the first 5 or 6 numbers on the fille to set machine settings. ie: machine size (Not Implemented)
+               AB = atof(fileContents);
+                bX = AB + aX;
+               rocker = 1;
+             }
+             else {
+               ACMax = atof(fileContents);
+               BCMax = ACMax;
+               rocker = 0;
+               setFile.close();
+               return;
+             }
+           }
+           fileContents[0] = '\0';
+           index = 0;
+         }
+       }
+    }
+  
+}
 
 
 
